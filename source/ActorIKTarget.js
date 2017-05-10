@@ -143,31 +143,31 @@ var ActorIKTarget = (function ()
 		// Transform to root bone space
 		if(b1._Parent._Length)
 		{
-			var t = mat2d.fromTranslation(mat2d.create(), [b1._Parent._Length, 0]);
-			world = mat2d.mul(t, world, t);
+			var t = _mat2d.fromTranslation(_mat2d.create(), [b1._Parent._Length, 0]);
+			world = _mat2d.mul(t, world, t);
 		}
 
-		var iworld = mat2d.invert(mat2d.create(), world);
+		var iworld = _mat2d.invert(_mat2d.create(), world);
 
 		var pA = b1.getWorldTranslation();
 		var pC = b1.getTipWorldTranslation();
 		var pB = b2.getTipWorldTranslation();
-		var pBT = vec2.copy(vec2.create(), worldTargetTranslation);
+		var pBT = _vec2.copy(_vec2.create(), worldTargetTranslation);
 
-		var pA = vec2.transformMat2d(pA, pA, iworld);
-		var pC = vec2.transformMat2d(pC, pC, iworld);
-		var pB = vec2.transformMat2d(pB, pB, iworld);
-		var pBT = vec2.transformMat2d(pBT, pBT, iworld);
+		var pA = _vec2.transformMat2d(pA, pA, iworld);
+		var pC = _vec2.transformMat2d(pC, pC, iworld);
+		var pB = _vec2.transformMat2d(pB, pB, iworld);
+		var pBT = _vec2.transformMat2d(pBT, pBT, iworld);
 
 		// http://mathworld.wolfram.com/LawofCosines.html
-		var av = vec2.subtract(vec2.create(), pB, pC);
-		var a = vec2.length(av);
+		var av = _vec2.subtract(_vec2.create(), pB, pC);
+		var a = _vec2.length(av);
 
-		var bv = vec2.subtract(vec2.create(), pC, pA);
-		var b = vec2.length(bv);
+		var bv = _vec2.subtract(_vec2.create(), pC, pA);
+		var b = _vec2.length(bv);
 
-		var cv = vec2.subtract(vec2.create(), pBT, pA);
-		var c = vec2.length(cv);
+		var cv = _vec2.subtract(_vec2.create(), pBT, pA);
+		var c = _vec2.length(cv);
 
 		var A = Math.acos(Math.max(-1,Math.min(1,(-a*a+b*b+c*c)/(2*b*c))));
 		var C = Math.acos(Math.max(-1, Math.min(1,(a*a+b*b-c*c)/(2*a*b))));
@@ -176,10 +176,10 @@ var ActorIKTarget = (function ()
 		if(b1c != b2)
 		{
 			var world2 = b1c.getWorldTransform();
-			var iworld2 = mat2d.invert(mat2d.create(), world2);
+			var iworld2 = _mat2d.invert(_mat2d.create(), world2);
 
 			var pa2 = b2.getTipWorldTranslation();
-			var tipBone2Local = vec2.transformMat2d(pa2, pa2, iworld2);
+			var tipBone2Local = _vec2.transformMat2d(pa2, pa2, iworld2);
 			var a = Math.atan2(tipBone2Local[1], tipBone2Local[0]);
 
 			angleCorrection = -a;
@@ -199,9 +199,9 @@ var ActorIKTarget = (function ()
 	function _Solve1(b1, worldTargetTranslation)
 	{
 		var world2 = b1.getWorldTransform();
-		var iworld2 = mat2d.invert(mat2d.create(), world2);
+		var iworld2 = _mat2d.invert(_mat2d.create(), world2);
 
-		var targetLocal = vec2.transformMat2d(vec2.create(), worldTargetTranslation, iworld2);
+		var targetLocal = _vec2.transformMat2d(_vec2.create(), worldTargetTranslation, iworld2);
 		var a = Math.atan2(targetLocal[1], targetLocal[0]);
 
 		b1.overrideRotation(b1._OverrideRotation+a);
@@ -214,7 +214,7 @@ var ActorIKTarget = (function ()
 			return true;
 		}*/
 
-		var worldTargetTranslation = vec2.create();
+		var worldTargetTranslation = _vec2.create();
 		var wt = this.getWorldTransform();
 		worldTargetTranslation[0] = wt[4];
 		worldTargetTranslation[1] = wt[5];

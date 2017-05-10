@@ -5,15 +5,15 @@ var ActorNode = (function ()
 		ActorComponent.call(this);
 		this._Children = [];
 		this._Dependents = [];
-		this._Transform = mat2d.create();
-		this._WorldTransform = mat2d.create();
+		this._Transform = _mat2d.create();
+		this._WorldTransform = _mat2d.create();
 		this._OverrideWorldTransform = false;
 		this._OverrideRotation = null;
 		
-		this._Translation = vec2.create();
+		this._Translation = _vec2.create();
 		this._Rotation = 0;
 		this._ParentIdx = 0;
-		this._Scale = vec2.set(vec2.create(), 1, 1);
+		this._Scale = _vec2.set(_vec2.create(), 1, 1);
 		this._Opacity = 1;
 		this._RenderOpacity = 1;
 
@@ -27,7 +27,7 @@ var ActorNode = (function ()
 	{
 		node._IsWorldDirty = false;
 
-		var transform = node._OverrideWorldTransform ? node._WorldTransform : mat2d.copy(node._WorldTransform, node.getTransform());
+		var transform = node._OverrideWorldTransform ? node._WorldTransform : _mat2d.copy(node._WorldTransform, node.getTransform());
 		
 		node._RenderOpacity = node._Opacity;
 		
@@ -38,7 +38,7 @@ var ActorNode = (function ()
 			node._RenderOpacity *= parent._RenderOpacity;
 			if(!node._OverrideWorldTransform)
 			{
-				transform = mat2d.mul(transform, parent._WorldTransform, transform);
+				transform = _mat2d.mul(transform, parent._WorldTransform, transform);
 			}
 		}
 
@@ -57,12 +57,12 @@ var ActorNode = (function ()
 		var s = node._Scale;
 		var transform = node._Transform;
 
-		mat2d.fromRotation(transform, r);
+		_mat2d.fromRotation(transform, r);
 
 		transform[4] = t[0];
 		transform[5] = t[1];
 
-		mat2d.scale(transform, transform, s);
+		_mat2d.scale(transform, transform, s);
 
 		return transform;
 	}
@@ -333,7 +333,7 @@ var ActorNode = (function ()
 	ActorNode.prototype.getWorldTranslation = function()
 	{
 		var transform = this.getWorldTransform();
-		return vec2.set(vec2.create(), transform[4], transform[5]);
+		return _vec2.set(_vec2.create(), transform[4], transform[5]);
 	};
 
 	ActorNode.subclass = function(other)
@@ -359,10 +359,10 @@ var ActorNode = (function ()
 		ActorComponent.prototype.copy.call(this, node, resetActor);
 		this._IsDirty = true;
 		this._IsWorldDirty = true;
-		mat2d.copy(this._Transform, node._Transform);
-		mat2d.copy(this._WorldTransform, node._WorldTransform);
-		vec2.copy(this._Translation, node._Translation);
-		vec2.copy(this._Scale, node._Scale);
+		_mat2d.copy(this._Transform, node._Transform);
+		_mat2d.copy(this._WorldTransform, node._WorldTransform);
+		_vec2.copy(this._Translation, node._Translation);
+		_vec2.copy(this._Scale, node._Scale);
 		this._Rotation = node._Rotation;
 		this._Opacity = node._Opacity;
 		this._RenderOpacity = node._RenderOpacity;

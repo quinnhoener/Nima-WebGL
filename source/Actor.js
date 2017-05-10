@@ -294,5 +294,48 @@ var Actor = (function ()
 		});
 	};	
 
+
+	Actor.prototype._ScaleX = function()
+	{
+		return this._RootNode._Scale[0];
+	}
+
+	Actor.prototype.setScaleX = function(scaleX)
+	{
+		this._RootNode._Scale[0] = scaleX;	
+		this._RootNode._IsDirty = true;
+		this._RootNode.markWorldDirty();
+	};
+
+	Actor.prototype._ScaleY = function()
+	{
+		return this._RootNode._Scale[1];
+	}
+
+	Actor.prototype.setScaleY = function(scaleY)
+	{
+		this._RootNode._Scale[1] = scaleY;
+		this._RootNode._IsDirty = true;
+		this._RootNode.markWorldDirty();
+	};
+
+	Actor.prototype.setXY = function(xVal, yVal)
+	{
+		this._RootNode._Translation[0] = xVal;
+		this._RootNode._Translation[1] = yVal;
+		this._RootNode._IsDirty = true;
+		this._RootNode.markWorldDirty();
+	}
+
+	Actor.prototype._X = function()
+	{
+		return this._RootNode._Translation[0];
+	}
+
+	Actor.prototype._Y = function()
+	{
+		return this._RootNode._Translation[1];
+	}
+
 	return Actor;
 }());

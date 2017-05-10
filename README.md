@@ -1,8 +1,14 @@
 ## Nima-WebGL
 Javascript runtime with WebGL rendering.
 
+Adding Construct 2 Plugin
+
 ## Building
 Use gulp to build a minified version.
+
+Run 'npm install gulp' to generate all references for the gulp files.
+
+Run 'gulp c2' to generate the runtime.js file for Construct 2
 
 ## Usage
 Take a look at example/archer.html for a pretty complete use case. More documentation soon.

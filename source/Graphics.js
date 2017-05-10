@@ -7,7 +7,7 @@ var Graphics = (function()
 			preserveDrawingBuffer: true
 		};
 
-		var _GL = canvas.getContext("webgl", contextOptions) || canvas.getContext("experimental-webgl", contextOptions);
+		var _GL = canvas.getContext("webgl", contextOptions) || canvas.getContext("experimental-webgl", contextOptions) || canvas.getContext("webgl2", contextOptions);
 
 		var _AnisotropyExtension = _GL.getExtension("EXT_texture_filter_anisotropic");
 		var _MaxAnisotropy;
@@ -16,9 +16,9 @@ var Graphics = (function()
 			_MaxAnisotropy = _GL.getParameter(_AnisotropyExtension.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
 		}
 
-		var _Projection = mat4.create();
-		var _Transform = mat4.create();
-		var _ViewTransform = mat4.create();
+		var _Projection = _mat4.create();
+		var _Transform = _mat4.create();
+		var _ViewTransform = _mat4.create();
 		var _ColorBuffer = new Float32Array(4);
 		var _ViewportWidth = 0;
 		var _ViewportHeight = 0;
@@ -35,7 +35,7 @@ var Graphics = (function()
 
 				_ViewportWidth = width;
 				_ViewportHeight = height;
-				mat4.ortho(_Projection, 0, _ViewportWidth, 0, _ViewportHeight, 0, 1);
+				_mat4.ortho(_Projection, 0, _ViewportWidth, 0, _ViewportHeight, 0, 1);
 				_GL.viewport(0, 0, _ViewportWidth, _ViewportHeight);
 				return true;
 			}
@@ -757,6 +757,7 @@ var Graphics = (function()
 		this.drawTexturedSkin = _DrawTexturedSkin;
 		this.drawTexturedAndDeformedSkin = _DrawTexturedAndDeformedSkin;
 		this.setView = _SetView;
+		this.projection = _Projection;
 
 		this.__defineGetter__("viewportWidth", function()
 		{

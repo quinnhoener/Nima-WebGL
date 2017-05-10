@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "gulp": "latest",
+    "gulp-concat": "^2.6.1",
+    "gulp-connect": "latest",
+    "gulp-fs": "latest",
+    "gulp-uglify": "latest",
+    "gulp-util": "latest"
+  }
+}

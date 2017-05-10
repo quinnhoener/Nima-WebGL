@@ -10,10 +10,10 @@ var ActorEvent = (function ()
 	
 	ActorEvent.prototype.getTipWorldTranslation = function()
 	{
-		var transform = mat2d.create();
+		var transform = _mat2d.create();
 		transform[4] = this._Length;
-		mat2d.mul(transform, this.getWorldTransform(), transform);
-		return vec2.set(vec2.create(), transform[4], transform[5]);
+		_mat2d.mul(transform, this.getWorldTransform(), transform);
+		return _vec2.set(_vec2.create(), transform[4], transform[5]);
 	};
 
 	ActorEvent.prototype.makeInstance = function(resetActor)

@@ -652,21 +652,21 @@ var ActorLoader = (function ()
 				component._ConnectedBones = [];
 				for(var i = 0; i < numConnectedBones; i++)
 				{
-					var bind = mat2d.create();
+					var bind = _mat2d.create();
 					var componentIndex = reader.readUint16();
 					reader.readFloat32Array(bind);
 
 					component._ConnectedBones.push({
 						componentIndex:componentIndex,
 						bind:bind,
-						ibind:mat2d.invert(mat2d.create(), bind)
+						ibind:_mat2d.invert(_mat2d.create(), bind)
 					});
 				}
 
 				// Read the final override parent world.
-				var overrideWorld = mat2d.create();
+				var overrideWorld = _mat2d.create();
 				reader.readFloat32Array(overrideWorld);
-				mat2d.copy(component._WorldTransform, overrideWorld);
+				_mat2d.copy(component._WorldTransform, overrideWorld);
 				component._OverrideWorldTransform = true;
 			}
 

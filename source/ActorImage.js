@@ -159,14 +159,14 @@ var ActorImage = (function ()
 			var bt = this._BoneMatrices;
 			var bidx = 6; // Start after first identity.
 
-			var mat = mat2d.create();
+			var mat = _mat2d.create();
 
 			for(var i = 0; i < this._ConnectedBones.length; i++)
 			{
 				var cb = this._ConnectedBones[i];
 
 				cb.node.updateTransforms();
-				var wt = mat2d.mul(mat, cb.node.getWorldTransform(), cb.ibind);
+				var wt = _mat2d.mul(mat, cb.node.getWorldTransform(), cb.ibind);
 
 				bt[bidx++] = wt[0];
 				bt[bidx++] = wt[1];
