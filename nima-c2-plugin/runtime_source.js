@@ -33,6 +33,8 @@ cr.plugins_.NimaPlugin = function(runtime)
 	// called on startup for each object type
 	typeProto.onCreate = function()
 	{
+		// Associative array of loaded actors.
+		this.actors = [];
 	};
 
 	/////////////////////////////////////
@@ -72,31 +74,38 @@ cr.plugins_.NimaPlugin = function(runtime)
 		this._Actor = null;
 		this._ActorInstance = null;
 
-		var loader = new ActorLoader();
-		var _This = this;
-		loader.load(this.NimaDataUrl, function(actor)
+		if ( this.type.actors[this.NimaDataUrl] != null )
 		{
-			if(!actor || actor.error)
+			this.setActor(this.type.actors[this.NimaDataUrl]);
+		}
+		else
+		{
+			var loader = new ActorLoader();
+			var _This = this;
+			loader.load(this.NimaDataUrl, function(actor)
 			{
-				console.log("Error loading Nima data at url: " + _This.NimaDataUrl);
-			}
-			else
-			{
-				_This.setActor(actor);
-			}
-		});
+				if(!actor || actor.error)
+				{
+					console.log("Error loading Nima data at url: " + _This.NimaDataUrl);
+				}
+				else
+				{
+					_This.type.actors[_This.NimaDataUrl] = actor;
+					actor.initialize(_This._Graphics);
+					_This.setActor(actor);
+				}
+			});
+		}
+
 	};
 	
 	instanceProto.setActor = function(actor)
 	{
-		actor.initialize(this._Graphics);
-
 		var actorInstance = actor.makeInstance();
 		actorInstance.initialize(this._Graphics);
 
 		this._Actor = actor;
 		this._ActorInstance = actorInstance;
-
 		this.CurrentAnimation = actorInstance.getAnimationInstance(this.StartAnim);
 
 		this.runtime.tickMe(this);
@@ -258,45 +267,563 @@ cr.plugins_.NimaPlugin = function(runtime)
 	/**END-PREVIEWONLY**/
 
 	//////////////////////////////////////
-	// Conditions
-	function Cnds() {};
+	
+// Conditions
+	
+
+function Cnds() {};
+
+
+
+// For the collision memory in 'On collision'.
+	var arrCache = [];
+	
+	function allocArr()
+	{
+		if (arrCache.length)
+			return arrCache.pop();
+		else
+			return [0, 0, 0];
+	};
+	
+	function freeArr(a)
+	{
+		a[0] = 0;
+		a[1] = 0;
+		a[2] = 0;
+		arrCache.push(a);
+	};
+	
+	function makeCollKey(a, b)
+	{
+		// comma separated string with lowest value first
+		if (a < b)
+			return "" + a + "," + b;
+		else
+			return "" + b + "," + a;
+	};
+	
+	function collmemory_add(collmemory, a, b, tickcount)
+	{
+		var a_uid = a.uid;
+		var b_uid = b.uid;
+
+		var key = makeCollKey(a_uid, b_uid);
+		
+		if (collmemory.hasOwnProperty(key))
+		{
+			// added already; just update tickcount
+			collmemory[key][2] = tickcount;
+			return;
+		}
+		
+		var arr = allocArr();
+		arr[0] = a_uid;
+		arr[1] = b_uid;
+		arr[2] = tickcount;
+		collmemory[key] = arr;
+	};
+	
+	function collmemory_remove(collmemory, a, b)
+	{
+		var key = makeCollKey(a.uid, b.uid);
+		
+		if (collmemory.hasOwnProperty(key))
+		{
+			freeArr(collmemory[key]);
+			delete collmemory[key];
+		}
+	};
+	
+	function collmemory_removeInstance(collmemory, inst)
+	{
+		var uid = inst.uid;
+		var p, entry;
+		for (p in collmemory)
+		{
+			if (collmemory.hasOwnProperty(p))
+			{
+				entry = collmemory[p];
+				
+				// Referenced in either UID: must be removed
+				if (entry[0] === uid || entry[1] === uid)
+				{
+					freeArr(collmemory[p]);
+					delete collmemory[p];
+				}
+			}
+		}
+	};
+	
+	var last_coll_tickcount = -2;
+	
+	function collmemory_has(collmemory, a, b)
+	{
+		var key = makeCollKey(a.uid, b.uid);
+		
+		if (collmemory.hasOwnProperty(key))
+		{
+			last_coll_tickcount = collmemory[key][2];
+			return true;
+		}
+		else
+		{
+			last_coll_tickcount = -2;
+			return false;
+		}
+	};
+	
+	var candidates1 = [];
+	
+	Cnds.prototype.OnCollision = function (rtype)
+	{	
+		if (!rtype)
+			return false;
+			
+		var runtime = this.runtime;
+			
+		// Static condition: perform picking manually.
+		// Get the current condition.  This is like the 'is overlapping' condition
+		// but with a built in 'trigger once' for the l instances.
+		var cnd = runtime.getCurrentCondition();
+		var ltype = cnd.type;
+		var collmemory = null;
+		
+		// Create the collision memory, which remembers pairs of collisions that
+		// are already overlapping
+		if (cnd.extra["collmemory"])
+		{
+			collmemory = cnd.extra["collmemory"];
+		}
+		else
+		{
+			collmemory = {};
+			cnd.extra["collmemory"] = collmemory;
+		}
+		
+		// Once per condition, add a destroy callback to remove destroyed instances from collision memory
+		// which helps avoid a memory leak. Note the spriteCreatedDestroyCallback property is not saved
+		// to savegames, so loading a savegame will still cause a callback to be created, as intended.
+		if (!cnd.extra["spriteCreatedDestroyCallback"])
+		{
+			cnd.extra["spriteCreatedDestroyCallback"] = true;
+			
+			runtime.addDestroyCallback(function(inst) {
+				collmemory_removeInstance(cnd.extra["collmemory"], inst);
+			});
+		}
+		
+		// Get the currently active SOLs for both objects involved in the overlap test
+		var lsol = ltype.getCurrentSol();
+		var rsol = rtype.getCurrentSol();
+		var linstances = lsol.getObjects();
+		var rinstances;
+		
+		// Iterate each combination of instances
+		var l, linst, r, rinst;
+		var curlsol, currsol;
+		
+		var tickcount = this.runtime.tickcount;
+		var lasttickcount = tickcount - 1;
+		var exists, run;
+		
+		var current_event = runtime.getCurrentEventStack().current_event;
+		var orblock = current_event.orblock;
+		
+		// Note: don't cache lengths of linstances or rinstances. They can change if objects get destroyed in the event
+		// retriggering.
+		for (l = 0; l < linstances.length; l++)
+		{
+			linst = linstances[l];
+			
+			if (rsol.select_all)
+			{
+				linst.update_bbox();
+				this.runtime.getCollisionCandidates(linst.layer, rtype, linst.bbox, candidates1);
+				rinstances = candidates1;
+			}
+			else
+				rinstances = rsol.getObjects();
+			
+			for (r = 0; r < rinstances.length; r++)
+			{
+				rinst = rinstances[r];
+				
+				if (runtime.testOverlap(linst, rinst) || runtime.checkRegisteredCollision(linst, rinst))
+				{
+					exists = collmemory_has(collmemory, linst, rinst);
+					run = (!exists || (last_coll_tickcount < lasttickcount));
+					
+					// objects are still touching so update the tickcount
+					collmemory_add(collmemory, linst, rinst, tickcount);
+					
+					if (run)
+					{						
+						runtime.pushCopySol(current_event.solModifiers);
+						curlsol = ltype.getCurrentSol();
+						currsol = rtype.getCurrentSol();
+						curlsol.select_all = false;
+						currsol.select_all = false;
+						
+						// If ltype === rtype, it's the same object (e.g. Sprite collides with Sprite)
+						// In which case, pick both instances
+						if (ltype === rtype)
+						{
+							curlsol.instances.length = 2;	// just use lsol, is same reference as rsol
+							curlsol.instances[0] = linst;
+							curlsol.instances[1] = rinst;
+							ltype.applySolToContainer();
+						}
+						else
+						{
+							// Pick each instance in its respective SOL
+							curlsol.instances.length = 1;
+							currsol.instances.length = 1;
+							curlsol.instances[0] = linst;
+							currsol.instances[0] = rinst;
+							ltype.applySolToContainer();
+							rtype.applySolToContainer();
+						}
+						
+						current_event.retrigger();
+						runtime.popSol(current_event.solModifiers);
+					}
+				}
+				else
+				{
+					// Pair not overlapping: ensure any record removed (mainly to save memory)
+					collmemory_remove(collmemory, linst, rinst);
+				}
+			}
+			
+			cr.clearArray(candidates1);
+		}
+		
+		// We've aleady run the event by now.
+		return false;
+	};
+	
+	var rpicktype = null;
+	var rtopick = new cr.ObjectSet();
+	var needscollisionfinish = false;
+	
+	var candidates2 = [];
+	var temp_bbox = new cr.rect(0, 0, 0, 0);
+	
+	function DoOverlapCondition(rtype, offx, offy)
+	{
+		if (!rtype)
+			return false;
+			
+		var do_offset = (offx !== 0 || offy !== 0);
+		var oldx, oldy, ret = false, r, lenr, rinst;
+		var cnd = this.runtime.getCurrentCondition();
+		var ltype = cnd.type;
+		var inverted = cnd.inverted;
+		var rsol = rtype.getCurrentSol();
+		var orblock = this.runtime.getCurrentEventStack().current_event.orblock;
+		var rinstances;
+		
+		if (rsol.select_all)
+		{
+			this.update_bbox();
+			
+			// Make sure queried box is offset the same as the collision offset so we look in
+			// the right cells
+			temp_bbox.copy(this.bbox);
+			temp_bbox.offset(offx, offy);
+			this.runtime.getCollisionCandidates(this.layer, rtype, temp_bbox, candidates2);
+			rinstances = candidates2;
+		}
+		else if (orblock)
+		{
+			// Normally the instances to process are in the else_instances array. However if a parent normal block
+			// already picked from rtype, it will have select_all off, no else_instances, and just some content
+			// in 'instances'. Look for this case in the first condition only.
+			if (this.runtime.isCurrentConditionFirst() && !rsol.else_instances.length && rsol.instances.length)
+				rinstances = rsol.instances;
+			else
+				rinstances = rsol.else_instances;
+		}
+		else
+		{
+			rinstances = rsol.instances;
+		}
+		
+		rpicktype = rtype;
+		needscollisionfinish = (ltype !== rtype && !inverted);
+		
+		if (do_offset)
+		{
+			oldx = this.x;
+			oldy = this.y;
+			this.x += offx;
+			this.y += offy;
+			this.set_bbox_changed();
+		}
+		
+		for (r = 0, lenr = rinstances.length; r < lenr; r++)
+		{
+			rinst = rinstances[r];
+			
+			// objects overlap: true for this instance, ensure both are picked
+			// (if ltype and rtype are same, e.g. "Sprite overlaps Sprite", don't pick the other instance,
+			// it will be picked when it gets iterated to itself)
+			if (this.runtime.testOverlap(this, rinst))
+			{
+				ret = true;
+				
+				// Inverted condition: just bail out now, don't pick right hand instance -
+				// also note we still return true since the condition invert flag makes that false
+				if (inverted)
+					break;
+					
+				if (ltype !== rtype)
+					rtopick.add(rinst);
+			}
+		}
+		
+		if (do_offset)
+		{
+			this.x = oldx;
+			this.y = oldy;
+			this.set_bbox_changed();
+		}
+		
+		cr.clearArray(candidates2);
+		return ret;
+	};
+	
+	typeProto.finish = function (do_pick)
+	{
+		if (!needscollisionfinish)
+			return;
+		
+		if (do_pick)
+		{
+			var orblock = this.runtime.getCurrentEventStack().current_event.orblock;
+			var sol = rpicktype.getCurrentSol();
+			var topick = rtopick.valuesRef();
+			var i, len, inst;
+			
+			if (sol.select_all)
+			{
+				// All selected: filter down to just those in topick
+				sol.select_all = false;
+				cr.clearArray(sol.instances);
+			
+				for (i = 0, len = topick.length; i < len; ++i)
+				{
+					sol.instances[i] = topick[i];
+				}
+				
+				// In OR blocks, else_instances must also be filled with objects not in topick
+				if (orblock)
+				{
+					cr.clearArray(sol.else_instances);
+					
+					for (i = 0, len = rpicktype.instances.length; i < len; ++i)
+					{
+						inst = rpicktype.instances[i];
+						
+						if (!rtopick.contains(inst))
+							sol.else_instances.push(inst);
+					}
+				}
+			}
+			else
+			{
+				if (orblock)
+				{
+					var initsize = sol.instances.length;
+				
+					for (i = 0, len = topick.length; i < len; ++i)
+					{
+						sol.instances[initsize + i] = topick[i];
+						cr.arrayFindRemove(sol.else_instances, topick[i]);
+					}
+				}
+				else
+				{
+					cr.shallowAssignArray(sol.instances, topick);
+				}
+			}
+			
+			rpicktype.applySolToContainer();
+		}
+		
+		rtopick.clear();
+		needscollisionfinish = false;
+	};
+	
+	Cnds.prototype.IsOverlapping = function (rtype)
+	{
+		return DoOverlapCondition.call(this, rtype, 0, 0);
+	};
+	
+	Cnds.prototype.IsOverlappingOffset = function (rtype, offx, offy)
+	{
+		return DoOverlapCondition.call(this, rtype, offx, offy);
+	};
 
 	// the example condition
+	
 	Cnds.prototype.MyCondition = function (myparam)
+	
 	{
-		// return true if number is positive
-		return myparam >= 0;
-	};
-	
-	// ... other conditions here ...
-	
-	pluginProto.cnds = new Cnds();
-	
-	//////////////////////////////////////
-	// Actions
-	function Acts() {};
 
-	// the example action
-	Acts.prototype.MyAction = function (myparam)
+		// return true if number is positive
+		
+		return myparam >= 0;
+	
+	};
+
+	
+	Cnds.prototype.IsMirrored = function ()
 	{
-		// alert the message
-		alert(myparam);
+		return this.width < 0;
 	};
 	
-	// ... other actions here ...
-	
-	pluginProto.acts = new Acts();
-	
-	//////////////////////////////////////
-	// Expressions
-	function Exps() {};
-	
-	// the example expression
-	Exps.prototype.MyExpression = function (ret)	// 'ret' must always be the first parameter - always return the expression's result through it!
+	Cnds.prototype.IsFlipped = function ()
 	{
-		ret.set_int(1337);				// return our value
-		// ret.set_float(0.5);			// for returning floats
-		// ret.set_string("Hello");		// for ef_return_string
+		return this.height < 0;
+	};
+
+	Cnds.prototype.IsCollisionEnabled = function ()
+	{
+		return this.collisionsEnabled;
+	};
+	
+	Cnds.prototype.IsAnimPlaying = function(animName)
+	{
+		return this.CurrentAnimation.Name == animName;
+	}
+	
+
+// ... other conditions here ...
+	
+	
+pluginProto.cnds = new Cnds();
+	
+	
+
+//////////////////////////////////////
+	
+// Actions
+	
+
+function Acts() {};
+
+
+// the example action
+	
+	Acts.prototype.MyAction = function (myparam)
+	
+	{
+
+		// alert the message
+
+		alert(myparam);
+	
+	};
+
+
+	Acts.prototype.SetMirrored = function (m)
+	{
+		var neww = cr.abs(this.width) * (m === 0 ? -1 : 1);
+		
+		if (this.width === neww)
+			return;
+			
+		this.width = neww;
+		this.set_bbox_changed();
+	};
+	
+	Acts.prototype.SetFlipped = function (f)
+	{
+		var newh = cr.abs(this.height) * (f === 0 ? -1 : 1);
+		
+		if (this.height === newh)
+			return;
+			
+		this.height = newh;
+		this.set_bbox_changed();
+	};
+
+	Acts.prototype.SetCollisions = function (set_)
+	{
+		if (this.collisionsEnabled === (set_ !== 0))
+			return;		// no change
+		
+		this.collisionsEnabled = (set_ !== 0);
+		
+		if (this.collisionsEnabled)
+			this.set_bbox_changed();		// needs to be added back to cells
+		else
+		{
+			// remove from any current cells and restore to uninitialised state
+			if (this.collcells.right >= this.collcells.left)
+				this.type.collision_grid.update(this, this.collcells, null);
+			
+			this.collcells.set(0, 0, -1, -1);
+		}
+	};
+
+	Acts.prototype.SetCollisions = function (set_)
+	{
+		if (this.collisionsEnabled === (set_ !== 0))
+			return;		// no change
+		
+		this.collisionsEnabled = (set_ !== 0);
+		
+		if (this.collisionsEnabled)
+			this.set_bbox_changed();		// needs to be added back to cells
+		else
+		{
+			// remove from any current cells and restore to uninitialised state
+			if (this.collcells.right >= this.collcells.left)
+				this.type.collision_grid.update(this, this.collcells, null);
+			
+			this.collcells.set(0, 0, -1, -1);
+		}
+	};
+
+	Acts.prototype.SetAnim = function(animName)
+	{
+		this.CurrentAnimation = this._ActorInstance.getAnimationInstance(animName);
+	}
+
+// ... other actions here ...
+	
+	
+
+pluginProto.acts = new Acts();
+	
+	
+
+//////////////////////////////////////
+	
+// Expressions
+	
+
+function Exps() {};
+	
+	
+
+// the example expression
+	
+Exps.prototype.MyExpression = function (ret)	
+// 'ret' must always be the first parameter - always return the expression's result through it!
+	{
+
+	ret.set_int(1337);
+	// return our value
+
+	// ret.set_float(0.5);	
+	// for returning floats
+	
+	// ret.set_string("Hello");
+	// for ef_return_string
 		// ret.set_any("woo");			// for ef_return_any, accepts either a number or string
 	};
 	
