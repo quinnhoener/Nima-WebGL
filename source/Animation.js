@@ -565,6 +565,14 @@ var AnimationInstance = (function ()
 				this._Animation.triggerEvents(actorComponents, time, this._Time, triggeredEvents);
 				time = this._Max - (this._Min - time);
 				this._Animation.triggerEvents(actorComponents, time, this._Max, triggeredEvents);
+				// Force add a Loop event
+				triggeredEvents.push({
+					name:"_Looped",
+					// component:component,
+					propertyType:AnimatedProperty.Properties.Trigger,
+					keyFrameTime:this._Max,
+					elapsed:time
+				});
 			}
 			else
 			{
@@ -572,6 +580,14 @@ var AnimationInstance = (function ()
 				if(this._Time != time)
 				{
 					this._Animation.triggerEvents(actorComponents, this._Min, this._Time, triggeredEvents);
+					// Force add a Complete event
+					triggeredEvents.push({
+						name:"_Complete",
+						// component:component,
+						propertyType:AnimatedProperty.Properties.Trigger,
+						keyFrameTime:this._Max,
+						elapsed:time
+					});
 				}
 			}
 		}
@@ -582,6 +598,14 @@ var AnimationInstance = (function ()
 				this._Animation.triggerEvents(actorComponents, time, this._Time, triggeredEvents);
 				time = this._Min + (time - this._Max);
 				this._Animation.triggerEvents(actorComponents, this._Min-0.001, time, triggeredEvents);
+				// Force add a Loop event
+				triggeredEvents.push({
+					name:"_Looped",
+					// component:component,
+					propertyType:AnimatedProperty.Properties.Trigger,
+					keyFrameTime:this._Max,
+					elapsed:time
+				});
 			}
 			else
 			{
@@ -589,6 +613,14 @@ var AnimationInstance = (function ()
 				if(this._Time != time)
 				{
 					this._Animation.triggerEvents(actorComponents, this._Time, this._Max, triggeredEvents);
+					// Force add a Complete event
+					triggeredEvents.push({
+						name:"_Complete",
+						// component:component,
+						propertyType:AnimatedProperty.Properties.Trigger,
+						keyFrameTime:this._Max,
+						elapsed:time
+					});
 				}
 			}
 		}

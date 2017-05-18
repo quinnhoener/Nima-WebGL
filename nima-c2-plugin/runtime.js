@@ -8442,6 +8442,14 @@ var AnimationInstance = (function ()
 				this._Animation.triggerEvents(actorComponents, time, this._Time, triggeredEvents);
 				time = this._Max - (this._Min - time);
 				this._Animation.triggerEvents(actorComponents, time, this._Max, triggeredEvents);
+				// Force add a Loop event
+				triggeredEvents.push({
+					name:"_Looped",
+					// component:component,
+					propertyType:AnimatedProperty.Properties.Trigger,
+					keyFrameTime:this._Max,
+					elapsed:time
+				});
 			}
 			else
 			{
@@ -8449,6 +8457,14 @@ var AnimationInstance = (function ()
 				if(this._Time != time)
 				{
 					this._Animation.triggerEvents(actorComponents, this._Min, this._Time, triggeredEvents);
+					// Force add a Complete event
+					triggeredEvents.push({
+						name:"_Complete",
+						// component:component,
+						propertyType:AnimatedProperty.Properties.Trigger,
+						keyFrameTime:this._Max,
+						elapsed:time
+					});
 				}
 			}
 		}
@@ -8459,6 +8475,14 @@ var AnimationInstance = (function ()
 				this._Animation.triggerEvents(actorComponents, time, this._Time, triggeredEvents);
 				time = this._Min + (time - this._Max);
 				this._Animation.triggerEvents(actorComponents, this._Min-0.001, time, triggeredEvents);
+				// Force add a Loop event
+				triggeredEvents.push({
+					name:"_Looped",
+					// component:component,
+					propertyType:AnimatedProperty.Properties.Trigger,
+					keyFrameTime:this._Max,
+					elapsed:time
+				});
 			}
 			else
 			{
@@ -8466,6 +8490,14 @@ var AnimationInstance = (function ()
 				if(this._Time != time)
 				{
 					this._Animation.triggerEvents(actorComponents, this._Time, this._Max, triggeredEvents);
+					// Force add a Complete event
+					triggeredEvents.push({
+						name:"_Complete",
+						// component:component,
+						propertyType:AnimatedProperty.Properties.Trigger,
+						keyFrameTime:this._Max,
+						elapsed:time
+					});
 				}
 			}
 		}
@@ -9703,6 +9735,9 @@ cr.plugins_.NimaPlugin = function(runtime)
 		this._Actor = null;
 		this._ActorInstance = null;
 
+		this._IsPlaying = true;
+		this._AnimSpeed = 1.0;
+
 		if ( this.type.actors[this.NimaDataUrl] != null )
 		{
 			this.setActor(this.type.actors[this.NimaDataUrl]);
@@ -9735,6 +9770,24 @@ cr.plugins_.NimaPlugin = function(runtime)
 
 		this._Actor = actor;
 		this._ActorInstance = actorInstance;
+
+		var _This = this;
+
+		this._ActorInstance.addEventListener("animationEvent", function(event)
+		{
+			switch(event.name)
+			{
+				case "_Looped":
+					_This.runtime.trigger(cr.plugins_.NimaPlugin.prototype.cnds.OnAnimLooped, _This);
+				break;
+
+				case "_Complete":
+					_This.runtime.trigger(cr.plugins_.NimaPlugin.prototype.cnds.OnAnyAnimFinished, _This);
+					_This.runtime.trigger(cr.plugins_.NimaPlugin.prototype.cnds.OnAnimFinished, _This);
+				break;
+			}
+		});
+
 		this.CurrentAnimation = actorInstance.getAnimationInstance(this.StartAnim);
 
 		this.runtime.tickMe(this);
@@ -9742,13 +9795,16 @@ cr.plugins_.NimaPlugin = function(runtime)
 
 	instanceProto.tick = function()
 	{
-		var dt = this.runtime.getDt(this);
+		if ( this._IsPlaying )
+		{
+			var dt = this.runtime.getDt(this) * this._AnimSpeed;
 
-		this.CurrentAnimation.advance(dt);
-		this.CurrentAnimation.apply(this._ActorInstance, 1);
-		this._ActorInstance.advance(dt);
+			this.CurrentAnimation.advance(dt);
+			this.CurrentAnimation.apply(this._ActorInstance, 1);
+			this._ActorInstance.advance(dt);
 
-		this.runtime.redraw = true;
+			this.runtime.redraw = true;
+		}
 	}
 
 	// called whenever an instance is destroyed
@@ -10325,9 +10381,24 @@ function Cnds() {};
 	
 	Cnds.prototype.IsAnimPlaying = function(animName)
 	{
-		return this.CurrentAnimation.Name == animName;
+		return this.CurrentAnimation._Animation._Name == animName;
 	}
 	
+	Cnds.prototype.OnAnimFinished = function(animName)
+	{
+		return this.CurrentAnimation._Animation._Name == animName;
+	}
+
+	Cnds.prototype.OnAnimLooped = function(animName)
+	{
+		return this.CurrentAnimation._Animation._Name == animName;
+	}
+
+	Cnds.prototype.OnAnyAnimFinished = function()
+	{
+		return true;
+	}
+
 
 // ... other conditions here ...
 	
@@ -10422,6 +10493,27 @@ function Acts() {};
 		this.CurrentAnimation = this._ActorInstance.getAnimationInstance(animName);
 	}
 
+	Acts.prototype.StopAnim = function()
+	{
+		this._IsPlaying = false;
+	}
+
+	Acts.prototype.StartAnim = function(from)
+	{
+		this._IsPlaying = true;
+
+		// Start from beginning
+		if ( from === 1 )
+		{
+			this.CurrentAnimation._Time = this.CurrentAnimation._Min;
+		}
+	}
+	
+	Acts.prototype.SetAnimSpeed = function(newSpeed)
+	{
+		this._AnimSpeed = newSpeed;
+	}
+
 // ... other actions here ...
 	
 	
@@ -10456,6 +10548,17 @@ Exps.prototype.MyExpression = function (ret)
 		// ret.set_any("woo");			// for ef_return_any, accepts either a number or string
 	};
 	
+	Exps.prototype.AnimationName = function (ret)	
+	{
+		ret.set_string(this.CurrentAnimation._Animation._Name);
+	}
+	
+	Exps.prototype.AnimationSpeed = function (ret)	
+	{
+		ret.set_float(this._AnimSpeed);
+	}
+
+
 	// ... other expressions here ...
 	
 	pluginProto.exps = new Exps();

@@ -53,43 +53,48 @@
 //				display_str,		// as appears in event sheet - use {0}, {1} for parameters and also <b></b>, <i></i>
 //				description,		// appears in event wizard dialog when selected
 //				script_name);		// corresponding runtime function name
-				
+
+var cnd_id = 0;		
+
 // example				
 AddObjectParam("Object", "Select the object to test for a collision with.");
-AddCondition(0, cf_fake_trigger | cf_static, "On collision with another object", "Collisions", "On collision with {0}", "Triggered when the object collides with another object.", "OnCollision");
+AddCondition(cnd_id++, cf_fake_trigger | cf_static, "On collision with another object", "Collisions", "On collision with {0}", "Triggered when the object collides with another object.", "OnCollision");
 
 AddObjectParam("Object", "Select the object to test for overlap with.");
-AddCondition(1, 0, "Is overlapping another object", "Collisions", "Is overlapping {0}", "Test if the object is overlapping another object.", "IsOverlapping");
+AddCondition(cnd_id++, 0, "Is overlapping another object", "Collisions", "Is overlapping {0}", "Test if the object is overlapping another object.", "IsOverlapping");
 
 AddAnimationParam("Animation", "Enter the name of the animation to check if playing.")
-AddCondition(2, 0, "Is playing", "Animations", "Is animation {0} playing", "Test which of the object's animations is currently playing.", "IsAnimPlaying");
+AddCondition(cnd_id++, 0, "Is playing", "Animations", "Is animation {0} playing", "Test which of the object's animations is currently playing.", "IsAnimPlaying");
 
 // AddCmpParam("Comparison", "How to compare the current animation frame number (0-based).");
 // AddNumberParam("Number", "The animation frame number to compare to (0-based).");
-// AddCondition(3, 0, "Compare frame", "Animations", "Animation frame {0} {1}", "Test which animation frame is currently showing.", "CompareFrame");
+// AddCondition(cnd_id++, 0, "Compare frame", "Animations", "Animation frame {0} {1}", "Test which animation frame is currently showing.", "CompareFrame");
 
 AddAnimationParam("Animation", "Enter the name of the animation that has finished.")
-AddCondition(4, cf_trigger, "On finished", "Animations", "On animation {0} finished", "Triggered when an animation has finished.", "OnAnimFinished");
+AddCondition(cnd_id++, cf_trigger, "On finished", "Animations", "On animation {0} finished", "Triggered when an animation has finished.", "OnAnimFinished");
 
-AddCondition(5, cf_trigger, "On any finished", "Animations", "On any animation finished", "Triggered when any animation has finished.", "OnAnyAnimFinished");
+AddAnimationParam("Animation", "Enter the name of the animation that has looped.")
+AddCondition(cnd_id++, cf_trigger, "On looped", "Animations", "On animation {0} looped", "Triggered when an animation has looped.", "OnAnimLooped");
 
-AddCondition(6, cf_trigger, "On frame changed", "Animations", "On frame changed", "Triggered when the current animation frame changes.", "OnFrameChanged");
+AddCondition(cnd_id++, cf_trigger, "On any finished", "Animations", "On any animation finished", "Triggered when any animation has finished.", "OnAnyAnimFinished");
 
-AddCondition(7, 0, "Is mirrored", "Appearance", "Is mirrored", "True if the object has been mirrored with the 'Set Mirrored' action.", "IsMirrored");
-AddCondition(8, 0, "Is flipped", "Appearance", "Is flipped", "True if the object has been flipped with the 'Set Flipped' action.", "IsFlipped");
+AddCondition(cnd_id++, cf_trigger, "On frame changed", "Animations", "On frame changed", "Triggered when the current animation frame changes.", "OnFrameChanged");
+
+AddCondition(cnd_id++, 0, "Is mirrored", "Appearance", "Is mirrored", "True if the object has been mirrored with the 'Set Mirrored' action.", "IsMirrored");
+AddCondition(cnd_id++, 0, "Is flipped", "Appearance", "Is flipped", "True if the object has been flipped with the 'Set Flipped' action.", "IsFlipped");
 
 AddObjectParam("Object", "Select the object to test for overlap with.");
 AddNumberParam("Offset X", "The amount to offset the X co-ordinate (in pixels) before checking for a collision.");
 AddNumberParam("Offset Y", "The amount to offset the Y co-ordinate (in pixels) before checking for a collision.");
-AddCondition(9, 0, "Is overlapping at offset", "Collisions", "Is overlapping {0} at offset (<i>{1}</i>, <i>{2}</i>)", "Test if the object is overlapping another object at an offset position.", "IsOverlappingOffset");
+AddCondition(cnd_id++, 0, "Is overlapping at offset", "Collisions", "Is overlapping {0} at offset (<i>{1}</i>, <i>{2}</i>)", "Test if the object is overlapping another object at an offset position.", "IsOverlappingOffset");
 
-AddCondition(10, cf_trigger, "On image URL loaded", "Web", "On image URL loaded", "Triggered after 'Load image from URL' when the image has finished loading.", "OnURLLoaded");
+AddCondition(cnd_id++, cf_trigger, "On image URL loaded", "Web", "On image URL loaded", "Triggered after 'Load image from URL' when the image has finished loading.", "OnURLLoaded");
 
-AddCondition(11, 0, "Collisions enabled", "Collisions", "Collisions enabled", "True if the object's collisions are enabled and will fire collision events.", "IsCollisionEnabled");
+AddCondition(cnd_id++, 0, "Collisions enabled", "Collisions", "Collisions enabled", "True if the object's collisions are enabled and will fire collision events.", "IsCollisionEnabled");
 
 AddCmpParam("Comparison", "How to compare the current animation speed.");
 AddNumberParam("Number", "The animation speed to compare to.");
-AddCondition(12, 0, "Compare speed", "Animations", "Animation speed {0} {1}", "Compare the current animation speed.", "CompareAnimSpeed");
+AddCondition(cnd_id++, 0, "Compare speed", "Animations", "Animation speed {0} {1}", "Compare the current animation speed.", "CompareAnimSpeed");
 
 ////////////////////////////////////////
 // Actions
@@ -102,11 +107,13 @@ AddCondition(12, 0, "Compare speed", "Animations", "Animation speed {0} {1}", "C
 //			 description,		// appears in event wizard dialog when selected
 //			 script_name);		// corresponding runtime function name
 
+var act_id = 0;
+
 // example
 AddObjectParam("Object", "Choose the object type of the new instance to create.");
 AddLayerParam("Layer", "The layer name or number to create the instance on.");
 AddAnyTypeParam("Image point", "Use 0 for the object's origin, or the name or number of an image point to spawn the object from.", "0");
-AddAction(0, 0, "Spawn another object", "Misc", "Spawn {0} on layer <b>{1}</b> <i>(image point {2})</i>", "Create another object at this object.", "Spawn");
+AddAction(act_id++, 0, "Spawn another object", "Misc", "Spawn {0} on layer <b>{1}</b> <i>(image point {2})</i>", "Create another object at this object.", "Spawn");
 
 // AddComboParamOption("Normal");
 // AddComboParamOption("Additive");
@@ -120,39 +127,39 @@ AddAction(0, 0, "Spawn another object", "Misc", "Spawn {0} on layer <b>{1}</b> <
 // AddComboParamOption("Source atop");
 // AddComboParamOption("Destination atop");
 // AddComboParam("Blend mode", "Choose the new blend mode for this object.");
-// AddAction(1, 0, "Set blend mode", "Appearance", "Set blend mode to <i>{0}</i>", "Set the background blend mode for this object.", "SetEffect");
+// AddAction(act_id++, 0, "Set blend mode", "Appearance", "Set blend mode to <i>{0}</i>", "Set the background blend mode for this object.", "SetEffect");
 
-AddAction(2, 0, "Stop",		"Animations",	"Stop animation",	"Stop the current animation from playing.", "StopAnim");
+AddAction(act_id++, 0, "Stop",		"Animations",	"Stop animation",	"Stop the current animation from playing.", "StopAnim");
 
-AddComboParamOption("current frame");
+AddComboParamOption("current time");
 AddComboParamOption("beginning");
 AddComboParam("From", "Choose whether to resume or rewind the animation back to the first frame.");
-AddAction(3, 0, "Start",	"Animations",	"Start animation from {0}",	"Start the current animation, if it was stopped.", "StartAnim");
+AddAction(act_id++, 0, "Start",	"Animations",	"Start animation from {0}",	"Start the current animation, if it was stopped.", "StartAnim");
 
 AddAnimationParam("Animation", "The name of the animation to set.");
 // AddComboParamOption("current frame");
 // AddComboParamOption("beginning");
 // AddComboParam("From", "Choose whether to play from the same frame number or rewind the animation back to the first frame.", 1);
-AddAction(4, 0, "Set animation", "Animations", "Set animation to <b>{0}</b> (play from {1})", "Set the current animation", "SetAnim");
+AddAction(act_id++, 0, "Set animation", "Animations", "Set animation to <b>{0}</b> (play from {1})", "Set the current animation", "SetAnim");
 
 // AddNumberParam("Frame number", "The animation frame number to set (0-based).");
-// AddAction(5, 0, "Set frame", "Animations", "Set animation frame to <b>{0}</b>", "Set the current animation frame number.", "SetAnimFrame");
+// AddAction(act_id++, 0, "Set frame", "Animations", "Set animation frame to <b>{0}</b>", "Set the current animation frame number.", "SetAnimFrame");
 
 AddNumberParam("Speed", "The new animation speed, in animation frames per second.");
-AddAction(6, 0, "Set speed", "Animations", "Set animation speed to <b>{0}</b>", "Set the current animation speed.", "SetAnimSpeed");
+AddAction(act_id++, 0, "Set speed", "Animations", "Set animation speed to <b>{0}</b>", "Set the current animation speed.", "SetAnimSpeed");
 
 AddComboParamOption("Mirrored");
 AddComboParamOption("Not mirrored");
 AddComboParam("State", "Choose whether to horizontally mirror the object or set it back to normal.");
-AddAction(7, 0, "Set mirrored", "Appearance", "Set <b>{0}</b>", "Set the object horizontally mirrored or back to normal.", "SetMirrored");
+AddAction(act_id++, 0, "Set mirrored", "Appearance", "Set <b>{0}</b>", "Set the object horizontally mirrored or back to normal.", "SetMirrored");
 
 AddComboParamOption("Flipped");
 AddComboParamOption("Not flipped");
 AddComboParam("State", "Choose whether to vertically flip the object or set it back to normal.");
-AddAction(8, 0, "Set flipped", "Appearance", "Set <b>{0}</b>", "Set the object vertically flipped or back to normal.", "SetFlipped");
+AddAction(act_id++, 0, "Set flipped", "Appearance", "Set <b>{0}</b>", "Set the object vertically flipped or back to normal.", "SetFlipped");
 
 // AddNumberParam("Scale", "The object width and height to set, based on a multiple of its original dimensions, e.g. 1 = original size, 2 = double size, 0.5 = half size etc.", "1");
-// AddAction(9, 0, "Set scale", "Size & Position", "Set scale to <i>{0}</i>", "Set the width and height as a multiple of its original size.", "SetScale");
+// AddAction(act_id++, 0, "Set scale", "Size & Position", "Set scale to <i>{0}</i>", "Set the width and height as a multiple of its original size.", "SetScale");
 
 // AddStringParam("URI", "Enter the URL on the web, or data URI, of an image to load.", "\"http://\"");
 // AddComboParamOption("Resize to image size");
@@ -161,15 +168,15 @@ AddAction(8, 0, "Set flipped", "Appearance", "Set <b>{0}</b>", "Set the object v
 // AddComboParamOption("anonymous");
 // AddComboParamOption("none");
 // AddComboParam("Cross-origin", "The cross-origin (CORS) mode to use for the request.");
-// AddAction(10, 0, "Load image from URL", "Web", "Load image from <i>{0}</i> ({1}, cross-origin {2})", "Replace the currently displaying animation frame with an image loaded from a web address or data URI.", "LoadURL");
+// AddAction(act_id++, 0, "Load image from URL", "Web", "Load image from <i>{0}</i> ({1}, cross-origin {2})", "Replace the currently displaying animation frame with an image loaded from a web address or data URI.", "LoadURL");
 
 AddComboParamOption("Disabled");
 AddComboParamOption("Enabled");
 AddComboParam("Collisions", "Whether to enable or disable collisions for this object.");
-AddAction(11, 0, "Set collisions enabled", "Misc", "Set collisions <b>{0}</b>", "Set whether the object will register collision events or not.", "SetCollisions");
+AddAction(act_id++, 0, "Set collisions enabled", "Misc", "Set collisions <b>{0}</b>", "Set whether the object will register collision events or not.", "SetCollisions");
 
 // AddNumberParam("Frame number", "The animation frame number to repeat to (0-based).");
-// AddAction(12, 0, "Set repeat-to frame", "Animations", "Set repeat-to frame to <b>{0}</b>", "Set the animation frame number to repeat to in a looping animation.", "SetAnimRepeatToFrame");
+// AddAction(act_id++, 0, "Set repeat-to frame", "Animations", "Set repeat-to frame to <b>{0}</b>", "Set the animation frame number to repeat to in a looping animation.", "SetAnimRepeatToFrame");
 
 ////////////////////////////////////////
 // Expressions
@@ -182,25 +189,27 @@ AddAction(11, 0, "Set collisions enabled", "Misc", "Set collisions <b>{0}</b>", 
 //				 exp_name,		// the expression name after the dot, e.g. "foo" for "myobject.foo" - also the runtime function name
 //				 description);	// description in expressions panel
 
+var exp_id = 0;
+
 // example
-AddExpression(0, ef_return_number, "Get animation frame", "Animations", "AnimationFrame", "The current animation frame number (0-based).");
+// AddExpression(exp_id++, ef_return_number, "Get animation frame", "Animations", "AnimationFrame", "The current animation frame number (0-based).");
 
-AddExpression(1, ef_return_number, "Get animation frame count", "Animations", "AnimationFrameCount", "The number of animation frames in the current animation.");
+// AddExpression(exp_id++, ef_return_number, "Get animation frame count", "Animations", "AnimationFrameCount", "The number of animation frames in the current animation.");
 
-AddExpression(2, ef_return_string, "Get animation name", "Animations", "AnimationName", "The name of the current animation.");
+AddExpression(exp_id++, ef_return_string, "Get animation name", "Animations", "AnimationName", "The name of the current animation.");
 
-AddExpression(3, ef_return_number, "Get animation speed", "Animations", "AnimationSpeed", "The speed of the current animation, in animation frames per second.");
+AddExpression(exp_id++, ef_return_number, "Get animation speed", "Animations", "AnimationSpeed", "The speed of the current animation, in animation frames per second.");
 
-AddAnyTypeParam("ImagePoint", "Name or number of image point to get.");
-AddExpression(4, ef_return_number, "Get image point X",		"Size & Position",	"ImagePointX", "The X position of one of the object's image points.");
+// AddAnyTypeParam("ImagePoint", "Name or number of image point to get.");
+// AddExpression(exp_id++, ef_return_number, "Get image point X",		"Size & Position",	"ImagePointX", "The X position of one of the object's image points.");
 
-AddAnyTypeParam("ImagePoint", "Name or number of image point to get.");
-AddExpression(5, ef_return_number, "Get image point Y",		"Size & Position",	"ImagePointY", "The Y position of one of the object's image points.");
+// AddAnyTypeParam("ImagePoint", "Name or number of image point to get.");
+// AddExpression(exp_id++, ef_return_number, "Get image point Y",		"Size & Position",	"ImagePointY", "The Y position of one of the object's image points.");
 
-AddExpression(6, ef_return_number, "Get image width", "Animations", "ImageWidth", "The width of the current animation frame image, in pixels.");
-AddExpression(7, ef_return_number, "Get image height", "Animations", "ImageHeight", "The height of the current animation frame image, in pixels.");
+// AddExpression(exp_id++, ef_return_number, "Get image width", "Animations", "ImageWidth", "The width of the current animation frame image, in pixels.");
+// AddExpression(exp_id++, ef_return_number, "Get image height", "Animations", "ImageHeight", "The height of the current animation frame image, in pixels.");
 
-AddExpression(8, ef_return_number, "", "Size & Position", "ImagePointCount", "The number of image points the current frame has.");
+// AddExpression(exp_id++, ef_return_number, "", "Size & Position", "ImagePointCount", "The number of image points the current frame has.");
 
 ////////////////////////////////////////
 ACESDone();
