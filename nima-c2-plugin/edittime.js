@@ -73,12 +73,15 @@ AddCondition(cnd_id++, 0, "Is playing", "Animations", "Is animation {0} playing"
 AddAnimationParam("Animation", "Enter the name of the animation that has finished.")
 AddCondition(cnd_id++, cf_trigger, "On finished", "Animations", "On animation {0} finished", "Triggered when an animation has finished.", "OnAnimFinished");
 
-AddAnimationParam("Animation", "Enter the name of the animation that has looped.")
-AddCondition(cnd_id++, cf_trigger, "On looped", "Animations", "On animation {0} looped", "Triggered when an animation has looped.", "OnAnimLooped");
+// AddAnimationParam("Animation", "Enter the name of the animation that has looped.")
+// AddCondition(cnd_id++, cf_trigger, "On looped", "Animations", "On animation {0} looped", "Triggered when an animation has looped.", "OnAnimLooped");
 
 AddCondition(cnd_id++, cf_trigger, "On any finished", "Animations", "On any animation finished", "Triggered when any animation has finished.", "OnAnyAnimFinished");
 
-AddCondition(cnd_id++, cf_trigger, "On frame changed", "Animations", "On frame changed", "Triggered when the current animation frame changes.", "OnFrameChanged");
+AddAnimationParam("Animation", "Enter the Nima animation event to listen for.")
+AddCondition(cnd_id++, cf_trigger, "On animation event", "Animations", "On animation event triggered", "Triggered when a custom animation event has triggered.", "OnAnimEvent");
+
+// AddCondition(cnd_id++, cf_trigger, "On frame changed", "Animations", "On frame changed", "Triggered when the current animation frame changes.", "OnFrameChanged");
 
 AddCondition(cnd_id++, 0, "Is mirrored", "Appearance", "Is mirrored", "True if the object has been mirrored with the 'Set Mirrored' action.", "IsMirrored");
 AddCondition(cnd_id++, 0, "Is flipped", "Appearance", "Is flipped", "True if the object has been flipped with the 'Set Flipped' action.", "IsFlipped");
@@ -137,9 +140,10 @@ AddComboParam("From", "Choose whether to resume or rewind the animation back to 
 AddAction(act_id++, 0, "Start",	"Animations",	"Start animation from {0}",	"Start the current animation, if it was stopped.", "StartAnim");
 
 AddAnimationParam("Animation", "The name of the animation to set.");
-// AddComboParamOption("current frame");
-// AddComboParamOption("beginning");
-// AddComboParam("From", "Choose whether to play from the same frame number or rewind the animation back to the first frame.", 1);
+AddComboParamOption("current time");
+AddComboParamOption("at time");
+AddComboParam("From", "Choose whether to play from the same time or set the time to start the animation at.", 1);
+AddNumberParam("Start time", "The animation time to start at.");
 AddAction(act_id++, 0, "Set animation", "Animations", "Set animation to <b>{0}</b> (play from {1})", "Set the current animation", "SetAnim");
 
 // AddNumberParam("Frame number", "The animation frame number to set (0-based).");

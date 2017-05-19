@@ -15,6 +15,7 @@ var Actor = (function ()
 		this._Solvers = [];
 		this._IsInstance = false;
 		this._IsImageSortDirty = false;
+		this._Alpha = 1.0;
 	}
 
 	Actor.prototype = 
@@ -73,7 +74,7 @@ var Actor = (function ()
 			for(var i = 0; i < atlases.length; i++)
 			{
 				var atlas = atlases[i];
-				graphics.deleteTexture(graphics);
+				graphics.deleteTexture(atlas);
 			}
 		}
 		var images = this._Images;
@@ -190,7 +191,7 @@ var Actor = (function ()
 		for(var i = 0; i < images.length; i++)
 		{
 			var img = images[i];
-			img.draw(graphics);
+			img.draw(graphics, this._Alpha);
 		}
 	};
 

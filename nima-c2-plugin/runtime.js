@@ -6405,6 +6405,7 @@ var Actor = (function ()
 		this._Solvers = [];
 		this._IsInstance = false;
 		this._IsImageSortDirty = false;
+		this._Alpha = 1.0;
 	}
 
 	Actor.prototype = 
@@ -6463,7 +6464,7 @@ var Actor = (function ()
 			for(var i = 0; i < atlases.length; i++)
 			{
 				var atlas = atlases[i];
-				graphics.deleteTexture(graphics);
+				graphics.deleteTexture(atlas);
 			}
 		}
 		var images = this._Images;
@@ -6580,7 +6581,7 @@ var Actor = (function ()
 		for(var i = 0; i < images.length; i++)
 		{
 			var img = images[i];
-			img.draw(graphics);
+			img.draw(graphics, this._Alpha);
 		}
 	};
 
@@ -7441,7 +7442,7 @@ var ActorImage = (function ()
 		}
 	};
 
-	ActorImage.prototype.draw = function(graphics)
+	ActorImage.prototype.draw = function(graphics, alpha)
 	{
 		var t = this._WorldTransform;
 		switch(this._BlendMode)
@@ -7460,26 +7461,29 @@ var ActorImage = (function ()
 				break;
 
 		}
+
+		var color = [1.0, 1.0, 1.0, 1.0];
+		var realOpacity = this._RenderOpacity * (alpha != null ? alpha : 1.0);
 		if(this._ConnectedBones)
 		{
 			if(this._DeformVertexBuffer)
 			{
-				graphics.drawTexturedAndDeformedSkin(t, this._DeformVertexBuffer, this._VertexBuffer, this._IndexBuffer, this._BoneMatrices, this._RenderOpacity, [1.0, 1.0, 1.0, 1.0], this._Texture);
+				graphics.drawTexturedAndDeformedSkin(t, this._DeformVertexBuffer, this._VertexBuffer, this._IndexBuffer, this._BoneMatrices, realOpacity, color, this._Texture);
 			}
 			else
 			{
-				graphics.drawTexturedSkin(t, this._VertexBuffer, this._IndexBuffer, this._BoneMatrices, this._RenderOpacity, [1.0, 1.0, 1.0, 1.0], this._Texture);
+				graphics.drawTexturedSkin(t, this._VertexBuffer, this._IndexBuffer, this._BoneMatrices, realOpacity, color, this._Texture);
 			}
 		}
 		else
 		{
 			if(this._DeformVertexBuffer)
 			{
-				graphics.drawTexturedAndDeformed(t, this._DeformVertexBuffer, this._VertexBuffer, this._IndexBuffer, this._RenderOpacity, [1.0, 1.0, 1.0, 1.0], this._Texture);
+				graphics.drawTexturedAndDeformed(t, this._DeformVertexBuffer, this._VertexBuffer, this._IndexBuffer, realOpacity, color, this._Texture);
 			}
 			else
 			{
-				graphics.drawTextured(t, this._VertexBuffer, this._IndexBuffer, this._RenderOpacity, [1.0, 1.0, 1.0, 1.0], this._Texture);
+				graphics.drawTextured(t, this._VertexBuffer, this._IndexBuffer, realOpacity, color, this._Texture);
 			}
 		}
 	};
@@ -8435,6 +8439,15 @@ var AnimationInstance = (function ()
 		var actorComponents = this._Actor._Components;
 		var time = this._Time;
 		time += seconds%this._Range;
+
+		var completeTrigger = {
+			name:"_Complete",
+			// component:component,
+			propertyType:AnimatedProperty.Properties.Trigger,
+			keyFrameTime:this._Max,
+			elapsed:time
+		};
+
 		if(time < this._Min)
 		{
 			if(this._Loop)
@@ -8442,14 +8455,7 @@ var AnimationInstance = (function ()
 				this._Animation.triggerEvents(actorComponents, time, this._Time, triggeredEvents);
 				time = this._Max - (this._Min - time);
 				this._Animation.triggerEvents(actorComponents, time, this._Max, triggeredEvents);
-				// Force add a Loop event
-				triggeredEvents.push({
-					name:"_Looped",
-					// component:component,
-					propertyType:AnimatedProperty.Properties.Trigger,
-					keyFrameTime:this._Max,
-					elapsed:time
-				});
+				triggeredEvents.push(completeTrigger);
 			}
 			else
 			{
@@ -8457,14 +8463,7 @@ var AnimationInstance = (function ()
 				if(this._Time != time)
 				{
 					this._Animation.triggerEvents(actorComponents, this._Min, this._Time, triggeredEvents);
-					// Force add a Complete event
-					triggeredEvents.push({
-						name:"_Complete",
-						// component:component,
-						propertyType:AnimatedProperty.Properties.Trigger,
-						keyFrameTime:this._Max,
-						elapsed:time
-					});
+					triggeredEvents.push(completeTrigger);
 				}
 			}
 		}
@@ -8475,14 +8474,7 @@ var AnimationInstance = (function ()
 				this._Animation.triggerEvents(actorComponents, time, this._Time, triggeredEvents);
 				time = this._Min + (time - this._Max);
 				this._Animation.triggerEvents(actorComponents, this._Min-0.001, time, triggeredEvents);
-				// Force add a Loop event
-				triggeredEvents.push({
-					name:"_Looped",
-					// component:component,
-					propertyType:AnimatedProperty.Properties.Trigger,
-					keyFrameTime:this._Max,
-					elapsed:time
-				});
+				triggeredEvents.push(completeTrigger);
 			}
 			else
 			{
@@ -8490,14 +8482,7 @@ var AnimationInstance = (function ()
 				if(this._Time != time)
 				{
 					this._Animation.triggerEvents(actorComponents, this._Time, this._Max, triggeredEvents);
-					// Force add a Complete event
-					triggeredEvents.push({
-						name:"_Complete",
-						// component:component,
-						propertyType:AnimatedProperty.Properties.Trigger,
-						keyFrameTime:this._Max,
-						elapsed:time
-					});
+					triggeredEvents.push(completeTrigger);
 				}
 			}
 		}
@@ -9775,20 +9760,26 @@ cr.plugins_.NimaPlugin = function(runtime)
 
 		this._ActorInstance.addEventListener("animationEvent", function(event)
 		{
+			_This.CurrAnimEvent = event.name;
 			switch(event.name)
 			{
-				case "_Looped":
-					_This.runtime.trigger(cr.plugins_.NimaPlugin.prototype.cnds.OnAnimLooped, _This);
-				break;
-
 				case "_Complete":
 					_This.runtime.trigger(cr.plugins_.NimaPlugin.prototype.cnds.OnAnyAnimFinished, _This);
 					_This.runtime.trigger(cr.plugins_.NimaPlugin.prototype.cnds.OnAnimFinished, _This);
+				break;
+
+				default:
+					_This.runtime.trigger(cr.plugins_.NimaPlugin.prototype.cnds.OnAnimEvent, _This);
 				break;
 			}
 		});
 
 		this.CurrentAnimation = actorInstance.getAnimationInstance(this.StartAnim);
+
+		// Make sure the animation has the first frame ready.
+		this.CurrentAnimation.advance(0);
+		this.CurrentAnimation.apply(this._ActorInstance, 1);
+		this._ActorInstance.advance(0);
 
 		this.runtime.tickMe(this);
 	}
@@ -9801,10 +9792,10 @@ cr.plugins_.NimaPlugin = function(runtime)
 
 			this.CurrentAnimation.advance(dt);
 			this.CurrentAnimation.apply(this._ActorInstance, 1);
+			this._ActorInstance._Alpha = this.opacity;
 			this._ActorInstance.advance(dt);
-
-			this.runtime.redraw = true;
 		}
+		this.runtime.redraw = true;
 	}
 
 	// called whenever an instance is destroyed
@@ -9812,10 +9803,6 @@ cr.plugins_.NimaPlugin = function(runtime)
 	// to release/recycle/reset any references to other objects in this function.
 	instanceProto.onDestroy = function ()
 	{
-		if(this._Actor)
-		{
-			this._Actor.dispose(this._Graphics);
-		}
 		if(this._ActorInstance)
 		{
 			this._ActorInstance.dispose(this._Graphics);
@@ -9828,6 +9815,8 @@ cr.plugins_.NimaPlugin = function(runtime)
 		this._ActorInstance = null;
 		this._Graphics = null;
 		this._ViewTransform = null;
+		this._IsPlaying = true;
+		this._AnimSpeed = 1.0;
 	};
 	
 	// called when saving the full state of the game
@@ -10381,6 +10370,9 @@ function Cnds() {};
 	
 	Cnds.prototype.IsAnimPlaying = function(animName)
 	{
+		if ( this.CurrentAnimation == null )
+			return false;
+
 		return this.CurrentAnimation._Animation._Name == animName;
 	}
 	
@@ -10389,14 +10381,14 @@ function Cnds() {};
 		return this.CurrentAnimation._Animation._Name == animName;
 	}
 
-	Cnds.prototype.OnAnimLooped = function(animName)
-	{
-		return this.CurrentAnimation._Animation._Name == animName;
-	}
-
 	Cnds.prototype.OnAnyAnimFinished = function()
 	{
 		return true;
+	}
+
+	Cnds.prototype.OnAnimEvent = function(eventName)
+	{
+		return this.CurrAnimEvent == eventName;
 	}
 
 
@@ -10488,9 +10480,20 @@ function Acts() {};
 		}
 	};
 
-	Acts.prototype.SetAnim = function(animName)
+	Acts.prototype.SetAnim = function(animName, fromChoice, startTime)
 	{
+		var currTime = this.CurrentAnimation._Time;
 		this.CurrentAnimation = this._ActorInstance.getAnimationInstance(animName);
+
+		// Current Time
+		if ( fromChoice === 0 )
+		{
+			this.CurrentAnimation._Time = currTime;
+		}
+		else
+		{
+			this.CurrentAnimation._Time = startTime;
+		}
 	}
 
 	Acts.prototype.StopAnim = function()

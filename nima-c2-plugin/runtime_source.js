@@ -114,20 +114,26 @@ cr.plugins_.NimaPlugin = function(runtime)
 
 		this._ActorInstance.addEventListener("animationEvent", function(event)
 		{
+			_This.CurrAnimEvent = event.name;
 			switch(event.name)
 			{
-				case "_Looped":
-					_This.runtime.trigger(cr.plugins_.NimaPlugin.prototype.cnds.OnAnimLooped, _This);
-				break;
-
 				case "_Complete":
 					_This.runtime.trigger(cr.plugins_.NimaPlugin.prototype.cnds.OnAnyAnimFinished, _This);
 					_This.runtime.trigger(cr.plugins_.NimaPlugin.prototype.cnds.OnAnimFinished, _This);
+				break;
+
+				default:
+					_This.runtime.trigger(cr.plugins_.NimaPlugin.prototype.cnds.OnAnimEvent, _This);
 				break;
 			}
 		});
 
 		this.CurrentAnimation = actorInstance.getAnimationInstance(this.StartAnim);
+
+		// Make sure the animation has the first frame ready.
+		this.CurrentAnimation.advance(0);
+		this.CurrentAnimation.apply(this._ActorInstance, 1);
+		this._ActorInstance.advance(0);
 
 		this.runtime.tickMe(this);
 	}
@@ -140,10 +146,10 @@ cr.plugins_.NimaPlugin = function(runtime)
 
 			this.CurrentAnimation.advance(dt);
 			this.CurrentAnimation.apply(this._ActorInstance, 1);
+			this._ActorInstance._Alpha = this.opacity;
 			this._ActorInstance.advance(dt);
-
-			this.runtime.redraw = true;
 		}
+		this.runtime.redraw = true;
 	}
 
 	// called whenever an instance is destroyed
@@ -151,10 +157,6 @@ cr.plugins_.NimaPlugin = function(runtime)
 	// to release/recycle/reset any references to other objects in this function.
 	instanceProto.onDestroy = function ()
 	{
-		if(this._Actor)
-		{
-			this._Actor.dispose(this._Graphics);
-		}
 		if(this._ActorInstance)
 		{
 			this._ActorInstance.dispose(this._Graphics);
@@ -167,6 +169,8 @@ cr.plugins_.NimaPlugin = function(runtime)
 		this._ActorInstance = null;
 		this._Graphics = null;
 		this._ViewTransform = null;
+		this._IsPlaying = true;
+		this._AnimSpeed = 1.0;
 	};
 	
 	// called when saving the full state of the game
@@ -720,6 +724,9 @@ function Cnds() {};
 	
 	Cnds.prototype.IsAnimPlaying = function(animName)
 	{
+		if ( this.CurrentAnimation == null )
+			return false;
+
 		return this.CurrentAnimation._Animation._Name == animName;
 	}
 	
@@ -728,14 +735,14 @@ function Cnds() {};
 		return this.CurrentAnimation._Animation._Name == animName;
 	}
 
-	Cnds.prototype.OnAnimLooped = function(animName)
-	{
-		return this.CurrentAnimation._Animation._Name == animName;
-	}
-
 	Cnds.prototype.OnAnyAnimFinished = function()
 	{
 		return true;
+	}
+
+	Cnds.prototype.OnAnimEvent = function(eventName)
+	{
+		return this.CurrAnimEvent == eventName;
 	}
 
 
@@ -827,9 +834,20 @@ function Acts() {};
 		}
 	};
 
-	Acts.prototype.SetAnim = function(animName)
+	Acts.prototype.SetAnim = function(animName, fromChoice, startTime)
 	{
+		var currTime = this.CurrentAnimation._Time;
 		this.CurrentAnimation = this._ActorInstance.getAnimationInstance(animName);
+
+		// Current Time
+		if ( fromChoice === 0 )
+		{
+			this.CurrentAnimation._Time = currTime;
+		}
+		else
+		{
+			this.CurrentAnimation._Time = startTime;
+		}
 	}
 
 	Acts.prototype.StopAnim = function()

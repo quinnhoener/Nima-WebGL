@@ -628,26 +628,29 @@ var Archer = (function ()
 		this._Actor = actor;
 		this._ActorInstance = actorInstance;
 
+		console.log(this._Actor);
+
 		if ( actorInstance )
 		{
-			this._IdleAnimation = actorInstance.getAnimationInstance("Idle");
+			this._IdleAnimation = actorInstance.getAnimationInstance("WalkToIdle");
 		}
 
-		// var archer = this;
-		// this._ActorInstance.addEventListener("animationEvent", function(event)
-		// {
-		// 	switch(event.name)
-		// 	{
-		// 		case "Step":
-		// 			// Only play the step sound if the run or walk animation is mixed enough over a threshold.
-		// 			if(archer._WalkMix > 0.5 || archer._RunMix > 0.5)
-		// 			{
-		// 				document.getElementById("sound").currentTime = 0;
-		// 				document.getElementById("sound").play();
-		// 			}
-		// 			break;
-		// 	}
-		// });
+		var archer = this;
+		this._ActorInstance.addEventListener("animationEvent", function(event)
+		{
+			console.log(event);
+			switch(event.name)
+			{
+				case "Step":
+					// Only play the step sound if the run or walk animation is mixed enough over a threshold.
+					if(archer._WalkMix > 0.5 || archer._RunMix > 0.5)
+					{
+						document.getElementById("sound").currentTime = 0;
+						document.getElementById("sound").play();
+					}
+					break;
+			}
+		});
 
 		// if(actorInstance)
 		// {

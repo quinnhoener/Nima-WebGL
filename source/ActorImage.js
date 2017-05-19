@@ -178,7 +178,7 @@ var ActorImage = (function ()
 		}
 	};
 
-	ActorImage.prototype.draw = function(graphics)
+	ActorImage.prototype.draw = function(graphics, alpha)
 	{
 		var t = this._WorldTransform;
 		switch(this._BlendMode)
@@ -197,26 +197,29 @@ var ActorImage = (function ()
 				break;
 
 		}
+
+		var color = [1.0, 1.0, 1.0, 1.0];
+		var realOpacity = this._RenderOpacity * (alpha != null ? alpha : 1.0);
 		if(this._ConnectedBones)
 		{
 			if(this._DeformVertexBuffer)
 			{
-				graphics.drawTexturedAndDeformedSkin(t, this._DeformVertexBuffer, this._VertexBuffer, this._IndexBuffer, this._BoneMatrices, this._RenderOpacity, [1.0, 1.0, 1.0, 1.0], this._Texture);
+				graphics.drawTexturedAndDeformedSkin(t, this._DeformVertexBuffer, this._VertexBuffer, this._IndexBuffer, this._BoneMatrices, realOpacity, color, this._Texture);
 			}
 			else
 			{
-				graphics.drawTexturedSkin(t, this._VertexBuffer, this._IndexBuffer, this._BoneMatrices, this._RenderOpacity, [1.0, 1.0, 1.0, 1.0], this._Texture);
+				graphics.drawTexturedSkin(t, this._VertexBuffer, this._IndexBuffer, this._BoneMatrices, realOpacity, color, this._Texture);
 			}
 		}
 		else
 		{
 			if(this._DeformVertexBuffer)
 			{
-				graphics.drawTexturedAndDeformed(t, this._DeformVertexBuffer, this._VertexBuffer, this._IndexBuffer, this._RenderOpacity, [1.0, 1.0, 1.0, 1.0], this._Texture);
+				graphics.drawTexturedAndDeformed(t, this._DeformVertexBuffer, this._VertexBuffer, this._IndexBuffer, realOpacity, color, this._Texture);
 			}
 			else
 			{
-				graphics.drawTextured(t, this._VertexBuffer, this._IndexBuffer, this._RenderOpacity, [1.0, 1.0, 1.0, 1.0], this._Texture);
+				graphics.drawTextured(t, this._VertexBuffer, this._IndexBuffer, realOpacity, color, this._Texture);
 			}
 		}
 	};
