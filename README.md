@@ -3,6 +3,14 @@ Javascript runtime with WebGL rendering.
 
 Adding Construct 2 Plugin
 
+## Construct Plugin
+If you want the latest, simply copy the plugin files from the nima-c2-plugin folder. 
+You'll need all of the files except for the runtime_source.js.
+
+Place them in a folder called "nima" in your Construct 2 Install Path\exporters\html5\plugins\
+
+If you notice any issues, please create a bug here on GitHub.
+
 ## Building
 Use gulp to build a minified version.
 
