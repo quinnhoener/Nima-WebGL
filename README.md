@@ -29,4 +29,4 @@ Take a look at example/archer.html for a pretty complete use case. More document
 5. Submit a pull request.
 
 ## License
-Hold please...
+Hold please... still holding
